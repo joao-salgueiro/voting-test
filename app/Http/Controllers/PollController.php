@@ -84,37 +84,31 @@ class PollController extends Controller
     {
         $poll = Poll::with('options')->findOrFail($id);
 
-            // Validação básica
-            $request->validate([
-                'title' => 'required|string|max:255',
-                'start' => 'required|date',
-                'end' => 'required|date|after:start',
-                'options' => 'required|array|min:3',
-                'options.*' => 'required|string|max:255',
-            ]);
+        // Validação básica
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'start' => 'required|date',
+            'end' => 'required|date|after:start',
+            'options' => 'required|array|min:3',
+            'options.*' => 'required|string|max:255',
+        ]);
 
-            // Atualiza dados da poll
-            $poll->update([
-                'title' => $request->title,
-                'start' => $request->start,
-                'end' => $request->end,
-            ]);
+        // Atualiza os dados principais da enquete
+        $poll->update([
+            'title' => $request->title,
+            'start' => $request->start,
+            'end' => $request->end,
+        ]);
 
-            // Atualiza opções existentes ou cria novas
-            foreach ($request->options as $optionId => $optionText) {
-                if (is_numeric($optionId)) {
-                    // Atualiza opção existente
-                    $option = $poll->options->where('id', $optionId)->first();
-                    if ($option) {
-                        $option->update(['text' => $optionText]);
-                    }
-                } else {
-                    // Cria nova opção (quando o índice não é numérico)
-                    $poll->options()->create(['text' => $optionText]);
-                }
-            }
+        // Apaga todas as opções antigas
+        $poll->options()->delete();
 
-            return redirect()->route('polls.show', $poll)->with('success', 'Poll updated successfully!');
+        // Cria novas opções com os textos fornecidos
+        foreach ($request->options as $optionText) {
+            $poll->options()->create(['text' => $optionText]);
+        }
+
+        return redirect()->route('polls.show', $poll)->with('success', 'Poll updated successfully!');
     }
 
     /**
